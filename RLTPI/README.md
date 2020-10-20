@@ -14,11 +14,11 @@
 
 &emsp;&emsp;[第三章：有模型数值迭代][3]
 
-&emsp;&emsp;[第四章：回合更新价值迭代][4]
+&emsp;&emsp;[第四章：回合更新（Monte Carlo update）价值迭代][4]
 
-&emsp;&emsp;[第五章：时序差分价值迭代][5]
+&emsp;&emsp;[第五章：时序差分（Temporal Difference, TD）价值迭代][5]
 
-&emsp;&emsp;[第六章：函数近似方法][6]
+&emsp;&emsp;[第六章：函数近似（function approximation）方法][6]
 
 &emsp;&emsp;[第七章：回合更新策略梯度方法][7]
 
