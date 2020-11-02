@@ -2,6 +2,10 @@ import gym
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import tensorflow as tf
+import tensorflow.keras as keras
+
+from tqdm import tqdm
 
 def run_episode(env, agent=None, train=False, render=False):
     episode_reward = 0
@@ -38,7 +42,7 @@ class TileCoder():
             return self.codebook[codeword]
         count = len(self.codebook)
         if count >= self.features:
-            return hash(codeword)
+            return hash(codeword) % self.features
         else:
             self.codebook[codeword] = count
             return count
@@ -77,12 +81,11 @@ class SARSA():
     def choose_action(self, state):
         if np.random.rand() < self.epsilon:
             return np.random.randint(self.action_n)
-        else:
-            qs = [self.get_q(state, action) for action in range(self.action_n)]
-            return np.argmax(qs)
+        qs = [self.get_q(state, action) for action in range(self.action_n)]
+        return np.argmax(qs)
 
     def learn(self, state, action, reward, next_state, done, next_action):
-        u = reward + (1. - done) * self.gamma * self.get_q(next_state, next_action)
+        u = reward + self.gamma * self.get_q(next_state, next_action) * (1 - done)
         td_error = u - self.get_q(state, action)
         features = self.encode(state, action)
         self.w[features] += (self.learning_rate * td_error)
@@ -99,7 +102,7 @@ class SARSALambda(SARSA):
         u = reward
         if not done:
             u += (self.gamma * self.get_q(next_state, next_action))
-            self.z *= (self.gamma * self.lamb)
+            self.z *= self.gamma * self.lamb
             features = self.encode(state, action)
             self.z[features] = 1.
         td_error = u - self.get_q(state, action)
@@ -128,20 +131,67 @@ class Replayer():
 class DQN():
     def __init__(self, env, net_kwargs={}, gamma=0.99, epsilon=0.001, \
             replayer_capacity=10000, batch_size=64):
-        pass
+        self.action_n = env.action_space.n
+        self.gamma = gamma
+        self.epsilon = epsilon
+
+        self.batch_size = batch_size
+        self.replayer = Replayer(replayer_capacity)
+
+        state_dim = env.observation_space.shape[0]
+        self.evaluate_net = self.build_network(input_size=state_dim, \
+                output_size=self.action_n, **net_kwargs)
+        self.target_net = keras.models.clone_model(self.evaluate_net)
     
-    def build_network():
-        pass
+    def build_network(self, input_size, hidden_sizes, output_size, \
+            activation=tf.nn.relu, output_activation=None, learning_rate=0.01):
+        model = keras.Sequential()
+        for layer, hidden_size in enumerate(hidden_sizes):
+            kwargs = dict(input_shape=(input_size, )) if not layer else {}
+            model.add(keras.layers.Dense(units=hidden_size, activation=activation, \
+                    kernel_initializer=keras.initializers.GlorotUniform(seed=0), **kwargs))
+        model.add(keras.layers.Dense(units=output_size, activation=output_activation, \
+                kernel_initializer=keras.initializers.GlorotUniform(seed=0)))
+        model.compile(loss="mse", optimizer=keras.optimizers.Adam(lr=learning_rate))
+        return model
 
-    def learn():
-        pass
+    def learn(self, state, action, reward, next_state, done, *args):
+        self.replayer.store_memory(state, action, reward, next_state, done)
+        states, actions, rewards, next_states, dones = \
+                self.replayer.sample(self.batch_size)
 
-    def choose_action():
-        pass
+        next_qs = self.target_net.predict(next_states)
+        us = rewards + self.gamma * next_qs.max(axis=-1) * (1 - dones)
+        targets = self.evaluate_net.predict(states)
+        targets[np.arange(us.shape[0]), actions] = us
+        self.evaluate_net.fit(states, targets, verbose=0)
 
-class DoubleDQN():
-    pass
+        if done:
+            self.target_net.set_weights(self.evaluate_net.get_weights())
 
+    def choose_action(self, state):
+        if np.random.rand() < self.epsilon:
+            return np.random.randint(self.action_n)
+        qs = self.evaluate_net.predict(state[np.newaxis])
+        return np.argmax(qs)
+
+class DoubleDQN(DQN):
+    def learn(self, state, action, reward, next_state, done, *args):
+        self.replayer.store_memory(state, action, reward, next_state, done)
+        states, actions, rewards, next_states, dones = \
+                self.replayer.sample(self.batch_size)
+
+        next_eval_qs = self.evaluate_net.predict(next_states)
+        next_actions = next_eval_qs.argmax(axis=-1)
+        next_qs = self.target_net.predict(next_states)
+        next_max_qs = next_qs[np.arange(next_qs.shape[0]), next_actions]
+        us = rewards + self.gamma * next_max_qs * (1 - dones)
+        targets = self.evaluate_net.predict(states)
+        targets[np.arange(us.shape[0]), actions] = us
+        self.evaluate_net.fit(states, targets, verbose=0)
+
+        if done:
+            self.target_net.set_weights(self.evaluate_net.get_weights())
 
 if __name__ =="__main__":
     env = gym.make("MountainCar-v0")
@@ -154,20 +204,22 @@ if __name__ =="__main__":
 
     #run_episode(env, render=True)
     
-    episodes = 300
+    episodes = 100
     episode_rewards = []
 
-    #agent = SARSA(env)
-    agent = SARSALambda(env)
-    #agent = DQN(env)
-    #agent = DoubleDQN(env)
+    agent = SARSA(env)
+    #agent = SARSALambda(env)
+    #agent = DQN(env, net_kwargs={"hidden_sizes": [64, ], "learning_rate": 0.001})
+    #agent = DoubleDQN(env, net_kwargs={"hidden_sizes": [64, ], "learning_rate": 0.01})
 
     # 智能体的训练与测试
-    for i in range(episodes):
+    print("训练智能体中...")
+    for i in tqdm(range(episodes)):
         episode_rewards.append(run_episode(env, agent, train=True))
     plt.plot(episode_rewards)
     agent.epsilon = 0
-    episode_rewards = [run_episode(env, agent) for _ in range(100)]
+    print("测试智能体中...")
+    episode_rewards = [run_episode(env, agent) for _ in tqdm(range(100))]
     print("平均回合奖励 = {} / {} = {}".format(sum(episode_rewards), \
             len(episode_rewards), np.mean(episode_rewards)))
     plt.show()
