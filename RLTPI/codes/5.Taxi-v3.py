@@ -2,6 +2,8 @@ import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
+from tqdm import tqdm
+
 def run_episode(env, agent=None, train=False, render=False):
     episode_reward = 0
     state = env.reset()
@@ -108,11 +110,13 @@ if __name__ == "__main__":
     #agent = SARSALambda(env)
     
     # 智能体的训练与测试
-    for i in range(episodes):
+    print("训练智能体中")
+    for i in tqdm(range(episodes)):
         episode_rewards.append(run_episode(env, agent, train=True))
     plt.plot(episode_rewards)
     agent.epsilon = 0
-    episode_rewards = [run_episode(env, agent) for _ in range(100)]
+    print("测试智能体中")
+    episode_rewards = [run_episode(env, agent) for _ in tqdm(range(100))]
     print("平均回合奖励 = {} / {} = {}".format(sum(episode_rewards), \
             len(episode_rewards), np.mean(episode_rewards)))
     plt.show()
