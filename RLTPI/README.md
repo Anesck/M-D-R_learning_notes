@@ -1,10 +1,15 @@
 ## 本目录下的内容为《强化学习原理与python实现》（肖智清著）的读书笔记与代码实践
 
-### 一、各目录说明
+**注：笔记内容所对应书籍的版次为 2019 年 12 月第 1 版第 3 次印刷，该书的部分内容作者已有勘误，更多信息请查看[原书的Github][13]**
+
+**停更说明：由于各种事情，笔记内容近段时间暂停更新**
+
+### 一、各目录和文件说明
 
 - `notes_typora_md`：目录下所有文件名以数字开头，该数字对应书籍章节的读书笔记，每章节的总结为一个 `.md` 文件。该文件为在 windows 上用 typora 写的 markdown 文件，许多语法在 github 上无法直接显示，需下载后用 typora 打开才能正常查看（注：要勾选 markdown 所有扩展语法），同时可方便修改和导出为其他类型文件。
 - `notes_html`：该目录下的所有文件是在 typora 上使用 `notes_typora_md/xxx.md` 文件导出的 `xxx.html` 同名文件。由于在 github 中直接打开查看是 HTML 源码，因此需要在下面的[读书总结](#二读书总结)中点击对应的章节查看笔记内容。或者下载后用浏览器打开查看，但这类文件不方便修改。
 - `codes` ：目录下所有文件名同样以数字开头，该数字为对应章节学习时使用的完整 `python` 代码，已全部测试运行过。
+- `venv.txt`：运行 `code` 目录下的代码所使用的虚拟环境中的所有的 `python` 包及版本。可新建虚拟环境，然后在虚拟环境中使用命令 `pip install -r venv.txt` 来安装所有的包及对应版本。
 
 ### 二、读书总结
 
@@ -44,6 +49,7 @@
 [10]:https://anesck.github.io/M-D-R_learning_notes/RLTPI/notes_html/10.chapter_ten.html	"查看笔记"
 [11]:https://anesck.github.io/M-D-R_learning_notes/RLTPI/notes_html/11.chapter_eleven.html	"查看笔记"
 [12]:https://anesck.github.io/M-D-R_learning_notes/RLTPI/notes_html/12.chapter_twelve.html	"查看笔记"
+[13]: https://github.com/ZhiqingXiao/rl-book
 
 ### 三、欢迎阅读和纠错，有问题请联系：<578449387@qq.com>，如果有帮助的话麻烦点颗星
 
